@@ -25,7 +25,10 @@ input,button{
 }
 input{background:#334155;color:white}
 button{background:#0284c7;color:white;font-weight:bold}
+button:disabled{opacity:.6}
 .switch{background:transparent;color:#38bdf8}
+#logoutBtn{background:#475569;display:none}
+#message{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -37,35 +40,152 @@ button{background:#0284c7;color:white;font-weight:bold}
 <input id="phone" type="tel"
 placeholder="Mobile Number" required>
 <input id="password" type="password"
-placeholder="Password" required minlength="6">
+placeholder="Password (minimum 6 characters)"
+required minlength="6">
 <button type="submit" id="submitBtn">Login</button>
 </form>
 
 <button class="switch" onclick="toggleForm()"
 id="switchBtn">Create New Account</button>
+
+<button id="logoutBtn">Logout</button>
 <p id="message">Welcome to TK666</p>
 </div>
 
-<script>
-let register=false;
+<script type="module">
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 
-function toggleForm(){
- register=!register;
- document.getElementById("heading").textContent=
- register?"Create Account":"Login to your account";
- document.getElementById("submitBtn").textContent=
- register?"Register":"Login";
- document.getElementById("switchBtn").textContent=
- register?"Back to Login":"Create New Account";
- document.getElementById("message").textContent=
- "Welcome to TK666";
+import {
+ getAuth,
+ createUserWithEmailAndPassword,
+ signInWithEmailAndPassword,
+ signOut,
+ onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
+
+const firebaseConfig = {
+ apiKey: "AIzaSyAfEV1c0E18S2b4YULqMLxCNkOgtc04_6o",
+ authDomain: "tk666-2101a.firebaseapp.com",
+ projectId: "tk666-2101a",
+ storageBucket: "tk666-2101a.firebasestorage.app",
+ messagingSenderId: "963437570044",
+ appId: "1:963437570044:web:95d26ccd708b1dd8587479",
+ measurementId: "G-PKJTM4M7BV"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+let register = false;
+
+const form = document.getElementById("accountForm");
+const phoneInput = document.getElementById("phone");
+const passwordInput = document.getElementById("password");
+const message = document.getElementById("message");
+const submitBtn = document.getElementById("submitBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
+function normalizePhone(value){
+ let digits = value.replace(/[০-৯]/g, d =>
+  "০১২৩৪৫৬৭৮৯".indexOf(d)
+ );
+
+ digits = digits.replace(/\D/g, "");
+
+ if(digits.startsWith("00880")){
+  digits = digits.slice(2);
+ }else if(digits.startsWith("01") && digits.length === 11){
+  digits = "88" + digits;
+ }
+
+ if(digits.length < 8 || digits.length > 15){
+  throw new Error("সঠিক মোবাইল নম্বর লিখুন।");
+ }
+
+ return digits;
 }
 
-document.getElementById("accountForm").onsubmit=function(e){
- e.preventDefault();
- document.getElementById("message").textContent=
- "Demo page ready! Server connection is needed for real accounts.";
+function phoneToEmail(phone){
+ return "phone." + phone + "@tk666-2101a.firebaseapp.com";
+}
+
+window.toggleForm = function(){
+ register = !register;
+
+ document.getElementById("heading").textContent =
+  register ? "Create Account" : "Login to your account";
+
+ submitBtn.textContent = register ? "Register" : "Login";
+
+ document.getElementById("switchBtn").textContent =
+  register ? "Back to Login" : "Create New Account";
+
+ message.textContent = "Welcome to TK666";
 };
+
+function showError(error){
+ const errors = {
+  "auth/email-already-in-use": "এই নম্বরে অ্যাকাউন্ট আগে থেকেই আছে।",
+  "auth/invalid-credential": "মোবাইল নম্বর অথবা পাসওয়ার্ড ভুল।",
+  "auth/weak-password": "পাসওয়ার্ড আরও শক্তিশালী করুন।",
+  "auth/invalid-email": "মোবাইল নম্বর সঠিক নয়।",
+  "auth/too-many-requests": "অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।",
+  "auth/network-request-failed": "ইন্টারনেট সংযোগ পরীক্ষা করুন।",
+  "auth/unauthorized-domain": "Firebase-এ এই ওয়েবসাইটের ডোমেইন অনুমোদন করতে হবে।"
+ };
+
+ message.textContent =
+  errors[error.code] || "সমস্যা হয়েছে: " + error.message;
+}
+
+form.addEventListener("submit", async function(e){
+ e.preventDefault();
+
+ submitBtn.disabled = true;
+ message.textContent = "অপেক্ষা করুন...";
+
+ try{
+  const phone = normalizePhone(phoneInput.value.trim());
+  const password = passwordInput.value;
+  const email = phoneToEmail(phone);
+
+  if(register){
+   await createUserWithEmailAndPassword(auth, email, password);
+   message.textContent = "অ্যাকাউন্ট তৈরি হয়েছে! TK666-এ স্বাগতম।";
+  }else{
+   await signInWithEmailAndPassword(auth, email, password);
+   message.textContent = "লগইন সফল হয়েছে!";
+  }
+
+ }catch(error){
+  showError(error);
+ }finally{
+  submitBtn.disabled = false;
+ }
+});
+
+logoutBtn.addEventListener("click", async function(){
+ try{
+  await signOut(auth);
+  message.textContent = "আপনি লগআউট করেছেন।";
+ }catch(error){
+  showError(error);
+ }
+});
+
+onAuthStateChanged(auth, user => {
+ if(user){
+  form.style.display = "none";
+  document.getElementById("switchBtn").style.display = "none";
+  logoutBtn.style.display = "block";
+  message.textContent = "আপনি TK666-এ লগইন করেছেন।";
+ }else{
+  form.style.display = "block";
+  document.getElementById("switchBtn").style.display = "block";
+  logoutBtn.style.display = "none";
+ }
+});
 </script>
 </body>
 </html>
