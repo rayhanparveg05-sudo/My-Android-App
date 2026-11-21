@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TK666</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101827;color:white;
+ font-family:Arial,sans-serif;
+ display:flex;justify-content:center;
+ align-items:center;min-height:100vh;
+}
+.card{
+ width:90%;max-width:400px;
+ background:#1e293b;padding:28px;
+ border-radius:18px;text-align:center;
+}
+h1{color:#38bdf8;font-size:38px}
+input,button{
+ width:100%;padding:14px;margin:9px 0;
+ border:0;border-radius:9px;font-size:16px;
+}
+input{background:#334155;color:white}
+button{background:#0284c7;color:white;font-weight:bold}
+.switch{background:transparent;color:#38bdf8}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>TK666</h1>
+<p id="heading">Login to your account</p>
+
+<form id="accountForm">
+<input id="phone" type="tel"
+placeholder="Mobile Number" required>
+<input id="password" type="password"
+placeholder="Password" required minlength="6">
+<button type="submit" id="submitBtn">Login</button>
+</form>
+
+<button class="switch" onclick="toggleForm()"
+id="switchBtn">Create New Account</button>
+<p id="message">Welcome to TK666</p>
+</div>
+
+<script>
+let register=false;
+
+function toggleForm(){
+ register=!register;
+ document.getElementById("heading").textContent=
+ register?"Create Account":"Login to your account";
+ document.getElementById("submitBtn").textContent=
+ register?"Register":"Login";
+ document.getElementById("switchBtn").textContent=
+ register?"Back to Login":"Create New Account";
+ document.getElementById("message").textContent=
+ "Welcome to TK666";
+}
+
+document.getElementById("accountForm").onsubmit=function(e){
+ e.preventDefault();
+ document.getElementById("message").textContent=
+ "Demo page ready! Server connection is needed for real accounts.";
+};
+</script>
+</body>
+</html>
