@@ -29,7 +29,7 @@ jobs:
         run: |
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/java/com/tk666/app
-          cp index.html app/src/main/assets/index.html
+          cp index.html/index.html app/src/main/assets/index.html
 
           cat > settings.gradle <<'EOF'
           pluginManagement {
