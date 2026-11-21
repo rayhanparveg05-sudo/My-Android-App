@@ -1,0 +1,119 @@
+
+name: Build TK666 APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'index.html'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create Android project
+        run: |
+          mkdir -p app/src/main/assets
+          mkdir -p app/src/main/java/com/tk666/app
+          cp index.html app/src/main/assets/index.html
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "TK666"
+          include ':app'
+          EOF
+
+          echo "plugins { id 'com.android.application' version '8.7.3' apply false }" > build.gradle
+
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.tk666.app'
+              compileSdk 35
+              defaultConfig {
+                  applicationId 'com.tk666.app'
+                  minSdk 23
+                  targetSdk 35
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="TK666" android:usesCleartextTraffic="true">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/java/com/tk666/app/MainActivity.java <<'EOF'
+          package com.tk666.app;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebView;
+          import android.webkit.WebSettings;
+          import android.webkit.WebViewClient;
+          import android.webkit.WebChromeClient;
+          public class MainActivity extends Activity {
+              public void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  WebView w = new WebView(this);
+                  w.setWebViewClient(new WebViewClient());
+                  w.setWebChromeClient(new WebChromeClient());
+                  WebSettings s = w.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  w.loadUrl("file:///android_asset/index.html");
+                  setContentView(w);
+              }
+          }
+          EOF
+
+      - name: Build APK
+        run: |
+          gradle wrapper --gradle-version 8.9
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload TK666 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TK666-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
