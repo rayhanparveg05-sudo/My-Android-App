@@ -3,19 +3,17 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TK666</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TK666 Gaming</title>
 <style>
 *{box-sizing:border-box}
 body{
  margin:0;background:#101827;color:white;
- font-family:Arial,sans-serif;
- display:flex;justify-content:center;
- align-items:center;min-height:100vh;
+ font-family:Arial,sans-serif;padding:20px;
 }
 .card{
- width:90%;max-width:400px;
- background:#1e293b;padding:28px;
+ max-width:430px;margin:30px auto;
+ background:#1e293b;padding:24px;
  border-radius:18px;text-align:center;
 }
 h1{color:#38bdf8;font-size:38px}
@@ -26,164 +24,199 @@ input,button{
 input{background:#334155;color:white}
 button{background:#0284c7;color:white;font-weight:bold}
 button:disabled{opacity:.6}
-.switch{background:transparent;color:#38bdf8}
-#logoutBtn{background:#475569;display:none}
+.secondary{background:#475569}
+.game{
+ background:#334155;padding:18px;
+ margin:12px 0;border-radius:12px;
+}
+#dashboard{display:none}
 #message{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
-<div class="card">
+
+<div class="card" id="loginPage">
 <h1>TK666</h1>
 <p id="heading">Login to your account</p>
-
 <form id="accountForm">
-<input id="phone" type="tel"
-placeholder="Mobile Number" required>
+<input id="phone" placeholder="Mobile Number" required>
 <input id="password" type="password"
 placeholder="Password (minimum 6 characters)"
-required minlength="6">
-<button type="submit" id="submitBtn">Login</button>
+minlength="6" required>
+<button id="submitBtn">Login</button>
 </form>
-
-<button class="switch" onclick="toggleForm()"
-id="switchBtn">Create New Account</button>
-
-<button id="logoutBtn">Logout</button>
+<button class="secondary" id="switchBtn">Create Account</button>
 <p id="message">Welcome to TK666</p>
 </div>
 
+<div class="card" id="dashboard">
+<h1>TK666</h1>
+<h2>🎮 Game Zone</h2>
+<div class="game">
+<h3>🪙 Coins</h3>
+<h2 id="coins">0</h2>
+<h3>⭐ Points</h3>
+<h2 id="points">0</h2>
+</div>
+<div class="game">
+<h3>🎁 Daily Bonus</h3>
+<button id="bonusBtn">Claim Bonus</button>
+<p id="bonusMessage"></p>
+</div>
+<div class="game">
+<h3>🐍 Snake Game</h3>
+<button onclick="alert('Snake Game coming soon!')">Play</button>
+</div>
+<div class="game">
+<h3>🎯 Number Game</h3>
+<button id="numberGame">Play</button>
+<p id="gameMessage"></p>
+</div>
+<button class="secondary" id="logoutBtn">Logout</button>
+</div>
+
 <script type="module">
-import { initializeApp }
+import {initializeApp}
 from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 
 import {
- getAuth,
- createUserWithEmailAndPassword,
- signInWithEmailAndPassword,
- signOut,
+ getAuth,createUserWithEmailAndPassword,
+ signInWithEmailAndPassword,signOut,
  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
-const firebaseConfig = {
- apiKey: "AIzaSyAfEV1c0E18S2b4YULqMLxCNkOgtc04_6o",
- authDomain: "tk666-2101a.firebaseapp.com",
- projectId: "tk666-2101a",
- storageBucket: "tk666-2101a.firebasestorage.app",
- messagingSenderId: "963437570044",
- appId: "1:963437570044:web:95d26ccd708b1dd8587479",
- measurementId: "G-PKJTM4M7BV"
+import {
+ getFirestore,doc,getDoc,setDoc,updateDoc
+} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+
+const firebaseConfig={
+ apiKey:"AIzaSyAfEV1c0E18S2b4YULqMLxCNkOgtc04_6o",
+ authDomain:"tk666-2101a.firebaseapp.com",
+ projectId:"tk666-2101a",
+ storageBucket:"tk666-2101a.firebasestorage.app",
+ messagingSenderId:"963437570044",
+ appId:"1:963437570044:web:95d26ccd708b1dd8587479"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
 
-let register = false;
+let register=false;
+const $=id=>document.getElementById(id);
 
-const form = document.getElementById("accountForm");
-const phoneInput = document.getElementById("phone");
-const passwordInput = document.getElementById("password");
-const message = document.getElementById("message");
-const submitBtn = document.getElementById("submitBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-
-function normalizePhone(value){
- let digits = value.replace(/[০-৯]/g, d =>
-  "০১২৩৪৫৬৭৮৯".indexOf(d)
- );
-
- digits = digits.replace(/\D/g, "");
-
- if(digits.startsWith("00880")){
-  digits = digits.slice(2);
- }else if(digits.startsWith("01") && digits.length === 11){
-  digits = "88" + digits;
- }
-
- if(digits.length < 8 || digits.length > 15){
-  throw new Error("সঠিক মোবাইল নম্বর লিখুন।");
- }
-
- return digits;
+function phoneEmail(value){
+ let digits=value.replace(/[০-৯]/g,d=>
+ "০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/\D/g,"");
+ if(digits.startsWith("01")&&digits.length===11)
+ digits="88"+digits;
+ if(digits.startsWith("00880"))digits=digits.slice(2);
+ if(digits.length<8||digits.length>15)
+ throw Error("সঠিক মোবাইল নম্বর লিখুন।");
+ return "phone."+digits+"@tk666-2101a.firebaseapp.com";
 }
 
-function phoneToEmail(phone){
- return "phone." + phone + "@tk666-2101a.firebaseapp.com";
-}
-
-window.toggleForm = function(){
- register = !register;
-
- document.getElementById("heading").textContent =
-  register ? "Create Account" : "Login to your account";
-
- submitBtn.textContent = register ? "Register" : "Login";
-
- document.getElementById("switchBtn").textContent =
-  register ? "Back to Login" : "Create New Account";
-
- message.textContent = "Welcome to TK666";
+$("switchBtn").onclick=()=>{
+ register=!register;
+ $("heading").textContent=register?"Create Account":"Login to your account";
+ $("submitBtn").textContent=register?"Register":"Login";
+ $("switchBtn").textContent=register?"Back to Login":"Create Account";
 };
 
-function showError(error){
- const errors = {
-  "auth/email-already-in-use": "এই নম্বরে অ্যাকাউন্ট আগে থেকেই আছে।",
-  "auth/invalid-credential": "মোবাইল নম্বর অথবা পাসওয়ার্ড ভুল।",
-  "auth/weak-password": "পাসওয়ার্ড আরও শক্তিশালী করুন।",
-  "auth/invalid-email": "মোবাইল নম্বর সঠিক নয়।",
-  "auth/too-many-requests": "অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পরে চেষ্টা করুন।",
-  "auth/network-request-failed": "ইন্টারনেট সংযোগ পরীক্ষা করুন।",
-  "auth/unauthorized-domain": "Firebase-এ এই ওয়েবসাইটের ডোমেইন অনুমোদন করতে হবে।"
- };
-
- message.textContent =
-  errors[error.code] || "সমস্যা হয়েছে: " + error.message;
-}
-
-form.addEventListener("submit", async function(e){
+$("accountForm").onsubmit=async e=>{
  e.preventDefault();
-
- submitBtn.disabled = true;
- message.textContent = "অপেক্ষা করুন...";
-
+ $("submitBtn").disabled=true;
  try{
-  const phone = normalizePhone(phoneInput.value.trim());
-  const password = passwordInput.value;
-  const email = phoneToEmail(phone);
-
+  const email=phoneEmail($("phone").value.trim());
+  const password=$("password").value;
   if(register){
-   await createUserWithEmailAndPassword(auth, email, password);
-   message.textContent = "অ্যাকাউন্ট তৈরি হয়েছে! TK666-এ স্বাগতম।";
+   await createUserWithEmailAndPassword(auth,email,password);
   }else{
-   await signInWithEmailAndPassword(auth, email, password);
-   message.textContent = "লগইন সফল হয়েছে!";
+   await signInWithEmailAndPassword(auth,email,password);
   }
-
- }catch(error){
-  showError(error);
+ }catch(e){
+  $("message").textContent="সমস্যা: "+e.message;
  }finally{
-  submitBtn.disabled = false;
+  $("submitBtn").disabled=false;
  }
-});
+};
 
-logoutBtn.addEventListener("click", async function(){
+async function loadDashboard(user){
+ $("loginPage").style.display="none";
+ $("dashboard").style.display="block";
+
+ const ref=doc(db,"players",user.uid);
+ let snap=await getDoc(ref);
+
+ if(!snap.exists()){
+  await setDoc(ref,{coins:0,points:0,lastBonus:""});
+  snap=await getDoc(ref);
+ }
+
+ const data=snap.data();
+ $("coins").textContent=data.coins||0;
+ $("points").textContent=data.points||0;
+}
+
+$("bonusBtn").onclick=async()=>{
+ const user=auth.currentUser;
+ if(!user)return;
+ const ref=doc(db,"players",user.uid);
  try{
-  await signOut(auth);
-  message.textContent = "আপনি লগআউট করেছেন।";
- }catch(error){
-  showError(error);
+  const snap=await getDoc(ref);
+  const data=snap.data();
+  const today=new Date().toISOString().slice(0,10);
+  if(data.lastBonus===today){
+   $("bonusMessage").textContent="আজকের বোনাস নেওয়া হয়েছে।";
+   return;
+  }
+  await updateDoc(ref,{
+   coins:(data.coins||0)+10,
+   points:(data.points||0)+5,
+   lastBonus:today
+  });
+  $("coins").textContent=(data.coins||0)+10;
+  $("points").textContent=(data.points||0)+5;
+  $("bonusMessage").textContent="১০ কয়েন ও ৫ পয়েন্ট পেয়েছেন!";
+ }catch(e){
+  $("bonusMessage").textContent="সমস্যা: "+e.message;
  }
-});
+};
 
-onAuthStateChanged(auth, user => {
+$("numberGame").onclick=async()=>{
+ const user=auth.currentUser;
+ if(!user)return;
+ const ref=doc(db,"players",user.uid);
+ try{
+  const snap=await getDoc(ref);
+  const data=snap.data();
+  const win=Math.random()>.5;
+  if(win){
+   await updateDoc(ref,{
+    coins:(data.coins||0)+5,
+    points:(data.points||0)+2
+   });
+   $("coins").textContent=(data.coins||0)+5;
+   $("points").textContent=(data.points||0)+2;
+   $("gameMessage").textContent="জিতেছেন! ৫ কয়েন ও ২ পয়েন্ট!";
+  }else{
+   $("gameMessage").textContent="আবার চেষ্টা করুন!";
+  }
+ }catch(e){
+  $("gameMessage").textContent=e.message;
+ }
+};
+
+$("logoutBtn").onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,user=>{
  if(user){
-  form.style.display = "none";
-  document.getElementById("switchBtn").style.display = "none";
-  logoutBtn.style.display = "block";
-  message.textContent = "আপনি TK666-এ লগইন করেছেন।";
+  loadDashboard(user).catch(e=>{
+   $("bonusMessage").textContent="ডেটাবেস সমস্যা: "+e.message;
+  });
  }else{
-  form.style.display = "block";
-  document.getElementById("switchBtn").style.display = "block";
-  logoutBtn.style.display = "none";
+  $("dashboard").style.display="none";
+  $("loginPage").style.display="block";
  }
 });
 </script>
