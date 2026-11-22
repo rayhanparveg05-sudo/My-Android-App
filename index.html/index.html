@@ -1,10 +1,127 @@
 
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /players/{userId} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == userId;
-    }
-  }
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TK666</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101010;color:white;font-family:Arial;text-align:center;padding:20px}
+.card{max-width:420px;margin:20px auto;background:#202020;padding:22px;border:1px solid #d6a500;border-radius:15px}
+h1{color:#f5c400}
+input,button{width:100%;padding:13px;margin:8px 0;border-radius:8px;border:0;font-size:16px}
+input{background:#eee;color:#111}
+button{background:#d6a500;color:#111;font-weight:bold}
+.game{background:#333;color:#ffd34d}
+#app{display:none}
+.coins{font-size:25px;color:#ffd34d;margin:18px}
+</style>
+</head>
+<body>
+<h1>TK666</h1>
+<div class="card" id="login">
+<h2>অ্যাকাউন্ট তৈরি / লগইন</h2>
+<input id="phone" placeholder="মোবাইল নম্বর">
+<input id="password" type="password" placeholder="পাসওয়ার্ড">
+<button onclick="register()">রেজিস্ট্রেশন</button>
+<button onclick="loginUser()">লগইন</button>
+<p id="msg"></p>
+</div>
+
+<div class="card" id="app">
+<h2>স্বাগতম TK666</h2>
+<div class="coins">🪙 <span id="coins">0</span> কয়েন</div>
+<button onclick="bonus()">আজকের বোনাস নাও</button>
+<h3>গেমস</h3>
+<button class="game" onclick="play('কার্ড গেম')">🃏 কার্ড গেম</button>
+<button class="game" onclick="play('স্লট গেম')">🎰 স্লট গেম</button>
+<button class="game" onclick="play('রুলেট')">🎡 রুলেট</button>
+<button class="game" onclick="play('ডাইস')">🎲 ডাইস</button>
+<button class="game" onclick="play('কালার গেম')">🎨 কালার গেম</button>
+<button onclick="logout()">লগআউট</button>
+<p id="gameMsg"></p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig={
+apiKey:"AIzaSyAfEV1c0E18S2b4YULqMLxCNkOgtc04_6o",
+authDomain:"tk666-2101a.firebaseapp.com",
+projectId:"tk666-2101a",
+storageBucket:"tk666-2101a.firebasestorage.app",
+messagingSenderId:"963437570044",
+appId:"1:963437570044:web:95d26ccd708b1dd8587479"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();
+const db=firebase.firestore();
+
+function email(){
+let n=document.getElementById("phone").value.replace(/\D/g,"");
+return "phone."+n+"@tk666-2101a.firebaseapp.com";
 }
+function message(t){document.getElementById("msg").innerText=t;}
+
+async function register(){
+try{
+let p=document.getElementById("password").value;
+if(email().includes("phone.@"))return message("মোবাইল নম্বর দিন");
+if(p.length<6)return message("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের দিন");
+let c=await auth.createUserWithEmailAndPassword(email(),p);
+await db.collection("players").doc(c.user.uid).set({
+coins:1000,createdAt:firebase.firestore.FieldValue.serverTimestamp()
+});
+message("অ্যাকাউন্ট তৈরি হয়েছে");
+}catch(e){message(e.message);}
+}
+
+async function loginUser(){
+try{
+await auth.signInWithEmailAndPassword(email(),document.getElementById("password").value);
+}catch(e){message(e.message);}
+}
+
+auth.onAuthStateChanged(async user=>{
+document.getElementById("login").style.display=user?"none":"block";
+document.getElementById("app").style.display=user?"block":"none";
+if(user)await loadCoins();
+});
+
+async function loadCoins(){
+let ref=db.collection("players").doc(auth.currentUser.uid);
+let d=await ref.get();
+if(!d.exists){
+await ref.set({coins:1000});
+d=await ref.get();
+}
+document.getElementById("coins").innerText=d.data().coins||0;
+}
+
+async function bonus(){
+try{
+let ref=db.collection("players").doc(auth.currentUser.uid);
+let d=await ref.get();
+let last=d.data().lastBonus;
+let today=new Date().toLocaleDateString("en-CA");
+if(last===today){alert("আজকের বোনাস নেওয়া হয়েছে");return;}
+await ref.update({
+coins:firebase.firestore.FieldValue.increment(100),
+lastBonus:today
+});
+await loadCoins();
+alert("১০০ কয়েন বোনাস পেয়েছ!");
+}catch(e){alert(e.message);}
+}
+
+function play(name){
+document.getElementById("gameMsg").innerText=
+name+" শিগগিরই চালু হবে। এটি ভার্চুয়াল কয়েনের বিনোদনমূলক গেম।";
+}
+function logout(){auth.signOut();}
+</script>
+</body>
+</html>
